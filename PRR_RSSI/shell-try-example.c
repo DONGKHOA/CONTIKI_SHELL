@@ -31,7 +31,7 @@ typedef struct
  *              Global variables                *
  ************************************************/
 
-static nn_struct nnTable[3] = {{-128, 0, 0, 1}, {-128, 0, 0, 2}, {-128, 0, 0, 3}};
+static nn_struct nnTable[5] = {{-128, 0, 0, 1}, {-128, 0, 0, 2}, {-128, 0, 0, 3}, {-128, 0, 0, 4}, {-128, 0, 0, 5}};
 uint8_t size;
 uint8_t count;
 uint8_t i, j;
@@ -41,6 +41,7 @@ static struct etimer et;
 char snum[4];
 uint8_t idx;
 static struct broadcast_conn broadcast;
+uint8_t STRATEGY = 2;
 
 /************************************************
  *                  Functions                   *
@@ -60,19 +61,22 @@ int partition(nn_struct arr[], int low, int high)
     int i = low - 1;
     for (j = low; j < high; j++)
     {
-#if NN_STRATEGY == 1 // 1.RSSI
-        if (arr[j].rssi >= pivot.rssi)
+        if (STRATEGY == 1)
         {
-            i++;
-            swap(&arr[i], &arr[j]);
+            if (arr[j].rssi >= pivot.rssi)
+            {
+                i++;
+                swap(&arr[i], &arr[j]);
+            }
         }
-#elif NN_STRATEGY == 2 // 2.PRR
-        if (arr[j].prr >= pivot.prr)
+        else
         {
-            i++;
-            swap(&arr[i], &arr[j]);
+            if (arr[j].prr >= pivot.prr)
+            {
+                i++;
+                swap(&arr[i], &arr[j]);
+            }
         }
-#endif
     }
     swap(&arr[i + 1], &arr[high]);
     return i + 1;
@@ -105,7 +109,6 @@ static void broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
     nnTable[idx].rssi = (int8_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
     /*Sort nnTable by NN_STRATEGY*/
     quicksort(nnTable, 0, count - 1);
-    printf("rcv ccdmcs\n");
 }
 static const struct broadcast_callbacks broadcast_call = {broadcast_recv};
 
@@ -132,7 +135,6 @@ PROCESS_THREAD(broadcast_process, ev, data)
         /* BROADCAST */
         packetbuf_copyfrom(snum, 4);
         broadcast_send(&broadcast);
-        printf("ccdmcs\n");
     }
     PROCESS_END();
 }
@@ -146,6 +148,7 @@ PROCESS_THREAD(shell_rssi_prr_process, ev, data)
 {
     PROCESS_BEGIN();
 
+    STRATEGY = (strcmp(data, "rssi") == 0) ? 2 : 1;
     char buf[100];
 
     shell_output_str(&rssi_prr_command, "----------------------------------------------------", "");
@@ -159,7 +162,6 @@ PROCESS_THREAD(shell_rssi_prr_process, ev, data)
         }
         else
         {
-
             snprintf(buf, sizeof(buf), "%d       %d          %d", (uint8_t)(nnTable[i].id), (int8_t)(nnTable[i].rssi), (uint8_t)(nnTable[i].prr));
             shell_output_str(&rssi_prr_command, buf, "");
         }
