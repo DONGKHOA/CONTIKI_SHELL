@@ -1,8 +1,7 @@
 # PROCESS SHELL
 
 ## Introduction
-- Hiển thị thông tin của node gồm ID và Channel đang sử dụng (shell-sky.c).
-- Hiển thị các tiến trình mà node đang chạy (shell-ps.c). 
+- Hiển thị thông tin của node gồm ID, Channel đang sử dụng và các tiến trình mà node đang chạy 
 
 ## Command
 
